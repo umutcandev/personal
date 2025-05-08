@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 type Message = {
   id: number;
   username: string;
+  display_name?: string;
   message: string;
   signature?: string;
   created_at: string;
@@ -59,7 +61,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, loading }) => {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 w-full">
-      {(loading ? skeletonArray : messages).map((msgOrIdx: any, idx: number) => {
+      {(loading ? skeletonArray : messages).map((msgOrIdx, idx) => {
         const isLoading = loading;
         const msg = isLoading
           ? null
@@ -86,19 +88,32 @@ const MessageList: React.FC<MessageListProps> = ({ messages, loading }) => {
               <>
                 <div className="text-sm sm:text-base text-card-foreground font-normal mb-3">{msg!.message}</div>
                 <div className="flex flex-col gap-0.5 mt-auto">
-                  <span className="font-bold text-base sm:text-lg text-card-foreground mb-0.5">{msg!.username || 'Anonim'}</span>
+                  <span className="font-bold text-base sm:text-lg text-card-foreground mb-0.5">{msg!.display_name || msg!.username || 'Anonim'}</span>
                   <span className="text-xs text-muted-foreground">{new Date(msg!.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}</span>
                 </div>
                 {msg!.signature && mounted && (
-                  <img
-                    src={msg!.signature}
-                    alt="İmza"
-                    className="absolute bottom-4 right-4 h-8 sm:h-10 max-w-[100px] sm:max-w-[150px] object-contain opacity-90"
-                    style={{
-                      filter: theme === 'light' ? 'invert(1) brightness(1.5)' : 'none',
-                      backgroundColor: 'transparent'
+                  <div 
+                    className="absolute bottom-4 right-4 h-8 sm:h-10 max-w-[100px] sm:max-w-[150px]"
+                    style={{ 
+                      position: 'absolute',
+                      bottom: '1rem',
+                      right: '1rem',
                     }}
-                  />
+                  >
+                    <Image
+                      src={msg!.signature}
+                      alt="İmza"
+                      width={150}
+                      height={40}
+                      className="object-contain opacity-90"
+                      style={{
+                        filter: theme === 'light' ? 'invert(1) brightness(1.5)' : 'none',
+                        backgroundColor: 'transparent',
+                        maxHeight: '40px',
+                        width: 'auto'
+                      }}
+                    />
+                  </div>
                 )}
               </>
             )}

@@ -9,8 +9,9 @@ const supabase = createClient(
 export async function POST(request: Request) {
   const { id, email, user_metadata } = await request.json();
   const username = user_metadata?.user_name || user_metadata?.name || email?.split('@')[0];
+  const display_name = user_metadata?.name || user_metadata?.full_name;
 
-  // Kullanıcı zaten varsa ekleme
+  // Kullanıcı zaten varsa güncelle
   const { data: existing } = await supabase
     .from('users')
     .select('id')
@@ -19,8 +20,14 @@ export async function POST(request: Request) {
 
   if (!existing) {
     await supabase.from('users').insert([
-      { id, email, username }
+      { id, email, username, display_name }
     ]);
+  } else {
+    // Kullanıcı varsa display_name'i güncelle
+    await supabase
+      .from('users')
+      .update({ display_name })
+      .eq('id', id);
   }
 
   return NextResponse.json({ ok: true });

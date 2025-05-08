@@ -8,11 +8,30 @@ import LoginButton from '../../components/guestbook/LoginButton';
 import LogoutButton from '../../components/guestbook/LogoutButton';
 import { supabase } from '../../lib/supabaseClient';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
+import { AuthChangeEvent, Session } from '@supabase/supabase-js';
+
+interface User {
+  id: string;
+  email?: string;
+  app_metadata: Record<string, unknown>;
+  user_metadata: Record<string, unknown>;
+  aud: string;
+}
+
+interface Message {
+  id: number;
+  username: string;
+  display_name?: string;
+  message: string;
+  created_at: string;
+  signature?: string;
+}
 
 export default function GuestbookPage() {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [messages, setMessages] = React.useState<any[]>([]);
-  const [user, setUser] = React.useState<any>(null);
+  const [messages, setMessages] = React.useState<Message[]>([]);
+  const [user, setUser] = React.useState<User | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [hasMore, setHasMore] = React.useState(true);
   const [page, setPage] = React.useState(1);
@@ -39,7 +58,7 @@ export default function GuestbookPage() {
         setMessages(prev => [...prev, ...data]);
       }
       setHasMore(data.length === 10); // Assuming 10 messages per page
-    } catch (e) {
+    } catch {
       setMessages([]);
     }
     setLoading(false);
@@ -61,7 +80,7 @@ export default function GuestbookPage() {
       setUser(data.user);
     };
     getUser();
-    const { data: listener } = supabase.auth.onAuthStateChange(( _event: any, session: any ) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       setUser(session?.user ?? null);
     });
     return () => {
@@ -97,9 +116,9 @@ export default function GuestbookPage() {
         <div className="w-full mt-[12px]">
           <div className="w-full flex items-center justify-between mb-2">
             <nav className="hidden sm:flex gap-5 text-lg font-light">
-              <a href="/" className="hover:underline">ana sayfa</a>
-              <a href="/guestbook" className="hover:underline">ziyaretçi defteri</a>
-              <a href="/contact" className="hover:underline">iletişim</a>
+              <Link href="/" className="hover:underline">ana sayfa</Link>
+              <Link href="/guestbook" className="hover:underline">ziyaretçi defteri</Link>
+              <Link href="/contact" className="hover:underline">iletişim</Link>
             </nav>
             <div className="sm:hidden absolute right-0 top-0">
               <MobileNavMenu />
@@ -143,7 +162,7 @@ export default function GuestbookPage() {
             </button>
           </div>
         )}
-        {isDialogOpen && (
+        {isDialogOpen && user && (
           <SignDialog 
             user={user} 
             onClose={() => setIsDialogOpen(false)} 

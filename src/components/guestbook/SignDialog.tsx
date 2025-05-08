@@ -1,7 +1,15 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+
+interface User {
+  id: string;
+  email?: string;
+  app_metadata: Record<string, unknown>;
+  user_metadata: Record<string, unknown>;
+  aud: string;
+}
 
 type SignDialogProps = {
-  user: any;
+  user: User;
   onClose: () => void;
   onMessageAdded: () => void;
 };
@@ -11,6 +19,8 @@ const getTheme = () => {
   if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
   return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
 };
+
+const MAX_MESSAGE_LENGTH = 100;
 
 const SignDialog: React.FC<SignDialogProps> = ({ user, onClose, onMessageAdded }) => {
   const [message, setMessage] = useState('');
@@ -53,7 +63,7 @@ const SignDialog: React.FC<SignDialogProps> = ({ user, onClose, onMessageAdded }
     };
   }, []);
 
-  const initializeCanvas = () => {
+  const initializeCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -80,9 +90,9 @@ const SignDialog: React.FC<SignDialogProps> = ({ user, onClose, onMessageAdded }
     // Save initial state
     const initialState = ctx.getImageData(0, 0, canvas.width, canvas.height);
     setDrawingHistory([initialState]);
-  };
+  }, [theme]);
 
-  const saveCanvasState = () => {
+  const saveCanvasState = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -90,9 +100,9 @@ const SignDialog: React.FC<SignDialogProps> = ({ user, onClose, onMessageAdded }
 
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     setDrawingHistory(prev => [...prev, imageData]);
-  };
+  }, []);
 
-  const undo = () => {
+  const undo = useCallback(() => {
     if (drawingHistory.length <= 1) return;
 
     const canvas = canvasRef.current;
@@ -111,13 +121,13 @@ const SignDialog: React.FC<SignDialogProps> = ({ user, onClose, onMessageAdded }
     // Update signature
     const dataUrl = canvas.toDataURL('image/png');
     setSignature(dataUrl);
-  };
+  }, [drawingHistory]);
 
   useEffect(() => {
     initializeCanvas();
-  }, [theme]);
+  }, [initializeCanvas]);
 
-  const getMousePos = (e: MouseEvent | TouchEvent) => {
+  const getMousePos = useCallback((e: MouseEvent | TouchEvent) => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
 
@@ -129,9 +139,9 @@ const SignDialog: React.FC<SignDialogProps> = ({ user, onClose, onMessageAdded }
       x: clientX - rect.left,
       y: clientY - rect.top
     };
-  };
+  }, []);
 
-  const drawLine = (from: { x: number; y: number }, to: { x: number; y: number }) => {
+  const drawLine = useCallback((from: { x: number; y: number }, to: { x: number; y: number }) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -141,9 +151,9 @@ const SignDialog: React.FC<SignDialogProps> = ({ user, onClose, onMessageAdded }
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(to.x, to.y);
     ctx.stroke();
-  };
+  }, []);
 
-  const handleStart = (e: MouseEvent | TouchEvent) => {
+  const handleStart = useCallback((e: MouseEvent | TouchEvent) => {
     e.preventDefault();
     const pos = getMousePos(e);
     if (!pos) return;
@@ -151,9 +161,9 @@ const SignDialog: React.FC<SignDialogProps> = ({ user, onClose, onMessageAdded }
     setIsDrawing(true);
     setLastPoint(pos);
     saveCanvasState();
-  };
+  }, [getMousePos, saveCanvasState]);
 
-  const handleMove = (e: MouseEvent | TouchEvent) => {
+  const handleMove = useCallback((e: MouseEvent | TouchEvent) => {
     e.preventDefault();
     if (!isDrawing || !lastPoint) return;
 
@@ -162,9 +172,9 @@ const SignDialog: React.FC<SignDialogProps> = ({ user, onClose, onMessageAdded }
 
     drawLine(lastPoint, pos);
     setLastPoint(pos);
-  };
+  }, [drawLine, getMousePos, isDrawing, lastPoint]);
 
-  const handleEnd = () => {
+  const handleEnd = useCallback(() => {
     if (!isDrawing) return;
     setIsDrawing(false);
     setLastPoint(null);
@@ -172,7 +182,7 @@ const SignDialog: React.FC<SignDialogProps> = ({ user, onClose, onMessageAdded }
     if (!canvas) return;
     const dataUrl = canvas.toDataURL('image/png');
     setSignature(dataUrl);
-  };
+  }, [isDrawing]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -197,9 +207,9 @@ const SignDialog: React.FC<SignDialogProps> = ({ user, onClose, onMessageAdded }
       canvas.removeEventListener('touchmove', handleMove);
       canvas.removeEventListener('touchend', handleEnd);
     };
-  }, [isDrawing, lastPoint]);
+  }, [handleEnd, handleMove, handleStart]);
 
-  const clearCanvas = () => {
+  const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -216,10 +226,13 @@ const SignDialog: React.FC<SignDialogProps> = ({ user, onClose, onMessageAdded }
     // Save cleared state
     const clearedState = ctx.getImageData(0, 0, canvas.width, canvas.height);
     setDrawingHistory([clearedState]);
-  };
+  }, [theme]);
 
   const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessage(e.target.value);
+    const input = e.target.value;
+    if (input.length <= MAX_MESSAGE_LENGTH) {
+      setMessage(input);
+    }
   };
 
   const handleSubmit = async () => {
@@ -229,7 +242,12 @@ const SignDialog: React.FC<SignDialogProps> = ({ user, onClose, onMessageAdded }
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message, signature, user_id: user?.id }),
+        body: JSON.stringify({ 
+          message, 
+          signature, 
+          user_id: user?.id,
+          display_name: user?.user_metadata?.name || user?.user_metadata?.full_name
+        }),
       });
 
       if (response.ok) {
@@ -238,7 +256,7 @@ const SignDialog: React.FC<SignDialogProps> = ({ user, onClose, onMessageAdded }
       } else {
         alert('Mesaj gönderilirken bir hata oluştu.');
       }
-    } catch (error) {
+    } catch {
       alert('Mesaj gönderilirken bir hata oluştu.');
     }
   };
@@ -254,17 +272,23 @@ const SignDialog: React.FC<SignDialogProps> = ({ user, onClose, onMessageAdded }
         </button>
         <h3 className="text-xl sm:text-2xl font-bold leading-tight mb-2">Ziyaretçi Defterini İmzala</h3>
         <div className="flex flex-col">
-          <label
-            htmlFor="message"
-            className="block text-sm font-medium mb-1"
-          >
-            Mesajınız
-          </label>
+          <div className="flex items-center justify-between mb-1">
+            <label
+              htmlFor="message"
+              className="block text-sm font-medium"
+            >
+              Mesajınız
+            </label>
+            <span className="text-xs text-muted-foreground">
+              {message.length}/{MAX_MESSAGE_LENGTH}
+            </span>
+          </div>
           <textarea
             id="message"
             value={message}
             onChange={handleMessageChange}
             rows={3}
+            maxLength={MAX_MESSAGE_LENGTH}
             className="block w-full rounded-md border border-border bg-background p-2 text-sm focus:ring-1 focus:outline-none"
             placeholder="Mesajınızı buraya yazın..."
           />
