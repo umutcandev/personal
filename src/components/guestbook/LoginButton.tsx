@@ -7,16 +7,15 @@ const LoginButton: React.FC = () => {
       // Canlı site URL'si
       const siteUrl = "https://personal-eta-umber.vercel.app";
       
-      console.log("Yönlendirme URL'si:", `${siteUrl}/guestbook`);
+      console.log("Yönlendirme URL'si:", `${siteUrl}/api/auth/callback`);
       
       // GitHub ile giriş işlemini başlat
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${siteUrl}/guestbook`,
+          redirectTo: `${siteUrl}/api/auth/callback`,
           queryParams: {
-            // Sağlanan değerler Supabase'in GitHub OAuth yapılandırmasıyla eşleşmeli
-            redirect_uri: `${siteUrl}/guestbook`
+            redirect_uri: `${siteUrl}/api/auth/callback`
           }
         },
       });

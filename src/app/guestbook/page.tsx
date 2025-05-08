@@ -35,6 +35,7 @@ export default function GuestbookPage() {
   const [loading, setLoading] = React.useState(true);
   const [hasMore, setHasMore] = React.useState(true);
   const [page, setPage] = React.useState(1);
+  const [authError, setAuthError] = React.useState<string | null>(null);
 
   const fetchMessages = async (pageNum = 1) => {
     setLoading(true);
@@ -76,13 +77,30 @@ export default function GuestbookPage() {
 
   React.useEffect(() => {
     const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      setUser(data.user);
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) {
+          console.error("Auth error:", error.message);
+          setAuthError(error.message);
+        } else {
+          setUser(data.user);
+          setAuthError(null);
+        }
+      } catch (err) {
+        console.error("Unexpected auth error:", err);
+        setAuthError("Beklenmeyen bir kimlik doğrulama hatası oluştu.");
+      }
     };
+    
     getUser();
+    
     const { data: listener } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        setAuthError(null);
+      }
     });
+    
     return () => {
       listener.subscription.unsubscribe();
     };
@@ -100,20 +118,24 @@ export default function GuestbookPage() {
 
   React.useEffect(() => {
     if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const error = urlParams.get('error');
+      
+      if (error) {
+        console.error("Auth error from URL:", error);
+        setAuthError(error === 'auth_callback_failed' 
+          ? "Kimlik doğrulama sırasında bir hata oluştu. Lütfen tekrar deneyin." 
+          : error);
+        
+        // Clean up the URL
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+      
+      // Check for access token in hash and clean up
       if (window.location.hash.includes('access_token')) {
         console.log("Authentication callback detected, cleaning up URL");
         window.history.replaceState(null, '', window.location.pathname);
       }
-      
-      const currentUrl = window.location.href;
-      console.log("Current URL:", currentUrl);
-      
-      const checkSession = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log("Active session:", session ? "Yes" : "No");
-      };
-      
-      checkSession();
     }
   }, []);
 
@@ -147,6 +169,13 @@ export default function GuestbookPage() {
             </div>
           </div>
         </div>
+        
+        {authError && (
+          <div className="w-full bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <p>{authError}</p>
+          </div>
+        )}
+        
         <div className="flex flex-wrap gap-2 mb-6">
           {user ? (
             <>
