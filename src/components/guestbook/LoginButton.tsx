@@ -5,25 +5,16 @@ import { getSiteUrl } from '../../lib/utils';
 const LoginButton: React.FC = () => {
   const handleLogin = async () => {
     try {
-      // Site URL'sini yardımcı fonksiyon ile al
-      const siteUrl = getSiteUrl();
-      
-      const callbackUrl = `${siteUrl}/api/auth/callback`;
-      console.log("Yönlendirme URL'si:", callbackUrl);
-      
-      // GitHub ile giriş işlemini başlat
+      // GitHub ile giriş işlemini başlat - Supabase'in kendi callback'ini kullan
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
-        options: {
-          redirectTo: callbackUrl
-        },
       });
       
       if (error) {
         console.error("Giriş hatası:", error.message);
         alert("Giriş yaparken bir hata oluştu: " + error.message);
       } else {
-        console.log("Giriş başlatıldı:", data);
+        console.log("Giriş başlatıldı");
       }
     } catch (e) {
       console.error("Beklenmeyen hata:", e);

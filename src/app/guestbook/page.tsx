@@ -6,7 +6,7 @@ import MessageList from '../../components/guestbook/MessageList';
 import SignDialog from '../../components/guestbook/SignDialog';
 import LoginButton from '../../components/guestbook/LoginButton';
 import LogoutButton from '../../components/guestbook/LogoutButton';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase, setupAuthListener } from '../../lib/supabaseClient';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { AuthChangeEvent, Session } from '@supabase/supabase-js';
@@ -74,6 +74,16 @@ export default function GuestbookPage() {
   React.useEffect(() => {
     fetchMessages();
   }, []);
+
+  React.useEffect(() => {
+    // Global auth listener'ı başlat
+    const subscription = setupAuthListener();
+    
+    // Komponent temizlendiğinde aboneliği temizle
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []); // Sadece bir kere çalıştır
 
   React.useEffect(() => {
     const getUser = async () => {
