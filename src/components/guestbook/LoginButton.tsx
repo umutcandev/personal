@@ -3,8 +3,10 @@ import { supabase } from '../../lib/supabaseClient';
 
 const LoginButton: React.FC = () => {
   const handleLogin = async () => {
-    // Dinamik URL oluştur: Önce NEXT_PUBLIC_SITE_URL'i kontrol et, yoksa window.location.origin kullan
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+    // Site URL'yi sabit olarak ayarlayın (canlı site adresi ile değiştirin)
+    const siteUrl = "https://personal-eta-umber.vercel.app"; // Buraya gerçek site adresinizi yazın
+    
+    console.log("Redirecting to:", `${siteUrl}/guestbook`);
     
     await supabase.auth.signInWithOAuth({
       provider: 'github',
