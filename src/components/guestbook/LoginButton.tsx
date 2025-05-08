@@ -1,13 +1,12 @@
 import React from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { getSiteUrl } from '../../lib/utils';
 
 const LoginButton: React.FC = () => {
   const handleLogin = async () => {
     try {
-      // Canlı site URL'si
-      const siteUrl = typeof window !== 'undefined' 
-        ? `${window.location.protocol}//${window.location.host}` 
-        : "https://personal-eta-umber.vercel.app";
+      // Site URL'sini yardımcı fonksiyon ile al
+      const siteUrl = getSiteUrl();
       
       const callbackUrl = `${siteUrl}/api/auth/callback`;
       console.log("Yönlendirme URL'si:", callbackUrl);
