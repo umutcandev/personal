@@ -87,8 +87,7 @@ export async function POST(request: Request) {
         .update({ 
           email,
           username, 
-          display_name,
-          updated_at: new Date().toISOString() 
+          display_name
         })
         .eq('id', id);
       

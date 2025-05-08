@@ -80,8 +80,13 @@ export default function GuestbookPage() {
       try {
         const { data, error } = await supabase.auth.getUser();
         if (error) {
-          console.error("GitHub kimlik doğrulama hatası:", error.message);
-          setAuthError(error.message);
+          if (error.message === "Auth session missing!") {
+            console.log("Kullanıcı henüz giriş yapmamış");
+            setAuthError(null);
+          } else {
+            console.error("GitHub kimlik doğrulama hatası:", error.message);
+            setAuthError(error.message);
+          }
         } else {
           console.log("Kullanıcı bilgileri alındı:", data.user ? "Giriş yapıldı" : "Giriş yapılmadı");
           setUser(data.user);
@@ -191,6 +196,12 @@ export default function GuestbookPage() {
         {authError && (
           <div className="w-full bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             <p>{authError}</p>
+          </div>
+        )}
+        
+        {!user && !authError && (
+          <div className="w-full bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded mb-4">
+            <p>Ziyaretçi defterini imzalamak için lütfen GitHub ile giriş yapın.</p>
           </div>
         )}
         
