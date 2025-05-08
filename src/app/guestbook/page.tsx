@@ -110,11 +110,33 @@ export default function GuestbookPage() {
 
   React.useEffect(() => {
     if (user) {
-      fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(user),
-      });
+      try {
+        console.log('Guestbook: Kullanıcı verileri API\'ye gönderiliyor', {
+          id: user.id,
+          hasEmail: !!user.email,
+          hasMetadata: !!user.user_metadata
+        });
+        
+        fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(user),
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`API yanıt hatası: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log('Guestbook: Kullanıcı verileri başarıyla kaydedildi', data);
+        })
+        .catch(error => {
+          console.error('Guestbook: Kullanıcı verilerini kaydederken API hatası:', error);
+        });
+      } catch (error) {
+        console.error('Guestbook: Kullanıcı verilerini kaydederken hata:', error);
+      }
     }
   }, [user]);
 

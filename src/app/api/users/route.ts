@@ -1,15 +1,37 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+// Supabase bağlantı bilgilerini kaydet ve günlüğe yaz
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+// Bağlantı bilgilerine sahip olduğumuzdan emin olalım
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('API: Supabase bilgileri eksik!', { 
+    hasUrl: !!supabaseUrl, 
+    hasKey: !!supabaseAnonKey 
+  });
+}
+
+// API route için yeni bir istemci oluşturalım
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export async function POST(request: Request) {
   try {
+    console.log('API: Kullanıcı kaydetme isteği alındı');
+    
     const userData = await request.json();
+    console.log('API: Kullanıcı verileri:', JSON.stringify(userData, null, 2));
+    
     const { id, email, user_metadata } = userData;
+    
+    if (!id) {
+      console.error('API: Kullanıcı ID eksik!');
+      return NextResponse.json(
+        { error: 'Kullanıcı ID eksik' },
+        { status: 400 }
+      );
+    }
     
     // GitHub kullanıcı bilgilerinden kullanıcı adını ve görünen adı çıkart
     const username = user_metadata?.user_name || 
@@ -26,29 +48,47 @@ export async function POST(request: Request) {
     console.log('API: GitHub kullanıcı kaydediliyor:', { id, username, display_name });
 
     // Kullanıcı zaten varsa güncelle
-    const { data: existing } = await supabase
+    const { data: existing, error: selectError } = await supabase
       .from('users')
       .select('id')
       .eq('id', id)
       .single();
+      
+    if (selectError && selectError.code !== 'PGRST116') {
+      console.error('API: Kullanıcı sorgulama hatası:', selectError);
+    }
 
+    let result;
+    
     if (!existing) {
       // Yeni kullanıcı oluştur
-      await supabase.from('users').insert([
+      result = await supabase.from('users').insert([
         { id, email, username, display_name }
       ]);
+      
+      if (result.error) {
+        console.error('API: Yeni kullanıcı oluşturma hatası:', result.error);
+        throw result.error;
+      }
+      
       console.log('API: Yeni GitHub kullanıcısı oluşturuldu');
     } else {
       // Kullanıcı varsa güncellemeleri yap
-      await supabase
+      result = await supabase
         .from('users')
         .update({ 
           email,
-          username,
+          username, 
           display_name,
           updated_at: new Date().toISOString() 
         })
         .eq('id', id);
+      
+      if (result.error) {
+        console.error('API: Kullanıcı güncelleme hatası:', result.error);
+        throw result.error;
+      }
+      
       console.log('API: Mevcut GitHub kullanıcısı güncellendi');
     }
 
