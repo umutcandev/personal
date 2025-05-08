@@ -3,17 +3,34 @@ import { supabase } from '../../lib/supabaseClient';
 
 const LoginButton: React.FC = () => {
   const handleLogin = async () => {
-    // Site URL'yi sabit olarak ayarlayın (canlı site adresi ile değiştirin)
-    const siteUrl = "https://personal-eta-umber.vercel.app"; // Buraya gerçek site adresinizi yazın
-    
-    console.log("Redirecting to:", `${siteUrl}/guestbook`);
-    
-    await supabase.auth.signInWithOAuth({
-      provider: 'github',
-      options: {
-        redirectTo: `${siteUrl}/guestbook`,
-      },
-    });
+    try {
+      // Canlı site URL'si
+      const siteUrl = "https://personal-eta-umber.vercel.app";
+      
+      console.log("Yönlendirme URL'si:", `${siteUrl}/guestbook`);
+      
+      // GitHub ile giriş işlemini başlat
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${siteUrl}/guestbook`,
+          queryParams: {
+            // Sağlanan değerler Supabase'in GitHub OAuth yapılandırmasıyla eşleşmeli
+            redirect_uri: `${siteUrl}/guestbook`
+          }
+        },
+      });
+      
+      if (error) {
+        console.error("Giriş hatası:", error.message);
+        alert("Giriş yaparken bir hata oluştu.");
+      } else {
+        console.log("Giriş başlatıldı:", data);
+      }
+    } catch (e) {
+      console.error("Beklenmeyen hata:", e);
+      alert("Giriş sırasında beklenmeyen bir hata oluştu.");
+    }
   };
 
   return (

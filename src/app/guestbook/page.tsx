@@ -99,8 +99,21 @@ export default function GuestbookPage() {
   }, [user]);
 
   React.useEffect(() => {
-    if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
-      window.history.replaceState(null, '', window.location.pathname);
+    if (typeof window !== 'undefined') {
+      if (window.location.hash.includes('access_token')) {
+        console.log("Authentication callback detected, cleaning up URL");
+        window.history.replaceState(null, '', window.location.pathname);
+      }
+      
+      const currentUrl = window.location.href;
+      console.log("Current URL:", currentUrl);
+      
+      const checkSession = async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("Active session:", session ? "Yes" : "No");
+      };
+      
+      checkSession();
     }
   }, []);
 
