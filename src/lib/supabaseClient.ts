@@ -13,29 +13,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true, // Otomatik oturum açma için URL'de hash'i algıla
+    detectSessionInUrl: true,
+    flowType: 'pkce', // Daha güvenli kimlik doğrulama akışı kullan
   }
-});
-
-// Oturum değişikliklerini izleyecek global bir dinleyici başlat
-export const setupAuthListener = () => {
-  const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-    console.log('Supabase Auth event:', event, session ? 'Oturum var' : 'Oturum yok');
-    
-    // Kullanıcı başarıyla giriş yaptığında, veritabanına kaydet
-    if (event === 'SIGNED_IN' && session?.user) {
-      try {
-        fetch('/api/users', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(session.user),
-        });
-        console.log('Kullanıcı verileri API\'ye gönderildi');
-      } catch (error) {
-        console.error('Kullanıcı verilerini kaydederken hata:', error);
-      }
-    }
-  });
-
-  return subscription;
-}; 
+}); 

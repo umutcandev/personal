@@ -6,7 +6,7 @@ import MessageList from '../../components/guestbook/MessageList';
 import SignDialog from '../../components/guestbook/SignDialog';
 import LoginButton from '../../components/guestbook/LoginButton';
 import LogoutButton from '../../components/guestbook/LogoutButton';
-import { supabase, setupAuthListener } from '../../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { AuthChangeEvent, Session } from '@supabase/supabase-js';
@@ -30,10 +30,10 @@ interface Message {
 
 export default function GuestbookPage() {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [messages, setMessages] = React.useState<Message[]>([]);
   const [user, setUser] = React.useState<User | null>(null);
+  const [messages, setMessages] = React.useState<Message[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [hasMore, setHasMore] = React.useState(true);
+  const [hasMore, setHasMore] = React.useState(false);
   const [page, setPage] = React.useState(1);
   const [authError, setAuthError] = React.useState<string | null>(null);
 
@@ -76,29 +76,19 @@ export default function GuestbookPage() {
   }, []);
 
   React.useEffect(() => {
-    // Global auth listener'ı başlat
-    const subscription = setupAuthListener();
-    
-    // Komponent temizlendiğinde aboneliği temizle
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []); // Sadece bir kere çalıştır
-
-  React.useEffect(() => {
     const getUser = async () => {
       try {
         const { data, error } = await supabase.auth.getUser();
         if (error) {
-          console.error("Auth error:", error.message);
+          console.error("GitHub kimlik doğrulama hatası:", error.message);
           setAuthError(error.message);
         } else {
-          console.log("User data retrieved:", data.user ? "Logged in" : "Not logged in");
+          console.log("Kullanıcı bilgileri alındı:", data.user ? "Giriş yapıldı" : "Giriş yapılmadı");
           setUser(data.user);
           setAuthError(null);
         }
       } catch (err) {
-        console.error("Unexpected auth error:", err);
+        console.error("Beklenmeyen kimlik doğrulama hatası:", err);
         setAuthError("Beklenmeyen bir kimlik doğrulama hatası oluştu.");
       }
     };
@@ -106,7 +96,7 @@ export default function GuestbookPage() {
     getUser();
     
     const { data: listener } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
-      console.log("Auth state changed:", event, session ? "Session exists" : "No session");
+      console.log("Kimlik durumu değişti:", event, session ? "Oturum var" : "Oturum yok");
       setUser(session?.user ?? null);
       if (session?.user) {
         setAuthError(null);
@@ -134,26 +124,13 @@ export default function GuestbookPage() {
       const error = urlParams.get('error');
       
       if (error) {
-        console.error("Auth error from URL:", error);
+        console.error("URL'den kimlik doğrulama hatası:", error);
         setAuthError(error === 'auth_callback_failed' 
-          ? "Kimlik doğrulama sırasında bir hata oluştu. Lütfen tekrar deneyin." 
+          ? "GitHub kimlik doğrulama sırasında bir hata oluştu. Lütfen tekrar deneyin." 
           : error);
         
-        // Clean up the URL
+        // URL'yi temizle
         window.history.replaceState(null, '', window.location.pathname);
-      }
-      
-      // Check for access token in hash and clean up
-      if (window.location.hash) {
-        console.log("URL hash detected, may contain auth data");
-        if (window.location.hash.includes('access_token')) {
-          console.log("Access token detected in URL, cleaning up");
-          // Let Supabase handle the hash automatically
-          supabase.auth.getSession().then(({ data }) => {
-            console.log("Session after hash:", data.session ? "exists" : "none");
-          });
-          window.history.replaceState(null, '', window.location.pathname);
-        }
       }
     }
   }, []);

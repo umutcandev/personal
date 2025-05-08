@@ -1,23 +1,26 @@
 import React from 'react';
 import { supabase } from '../../lib/supabaseClient';
-import { getSiteUrl } from '../../lib/utils';
 
 const LoginButton: React.FC = () => {
   const handleLogin = async () => {
     try {
-      // GitHub ile giriş işlemini başlat - Supabase'in kendi callback'ini kullan
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      // GitHub ile giriş işlemini başlat
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/api/auth/callback`,
+          scopes: 'user:email'
+        }
       });
       
       if (error) {
-        console.error("Giriş hatası:", error.message);
-        alert("Giriş yaparken bir hata oluştu: " + error.message);
+        console.error("GitHub giriş hatası:", error.message);
+        alert("GitHub ile giriş yaparken bir hata oluştu: " + error.message);
       } else {
-        console.log("Giriş başlatıldı");
+        console.log("GitHub giriş işlemi başlatıldı");
       }
     } catch (e) {
-      console.error("Beklenmeyen hata:", e);
+      console.error("Beklenmeyen bir hata oluştu:", e);
       alert("Giriş sırasında beklenmeyen bir hata oluştu.");
     }
   };
