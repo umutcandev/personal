@@ -17,8 +17,9 @@ export async function GET(request: NextRequest) {
   }
   
   if (code) {
-    // Kodu bir oturumla değiştir
     try {
+      // Supabase, code verifier'ı otomatik olarak cookie'den almalıdır
+      // Bu yüzden code_verifier parametresini elle sağlamak gerekmez
       const { error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
       
       if (sessionError) {

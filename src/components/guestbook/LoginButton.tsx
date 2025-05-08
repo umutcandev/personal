@@ -9,7 +9,8 @@ const LoginButton: React.FC = () => {
         provider: 'github',
         options: {
           redirectTo: `${window.location.origin}/api/auth/callback`,
-          scopes: 'user:email'
+          scopes: 'user:email',
+          skipBrowserRedirect: false // Tarayıcıyı otomatik olarak yönlendir
         }
       });
       

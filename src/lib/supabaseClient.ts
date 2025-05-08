@@ -14,6 +14,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'pkce', // Daha güvenli kimlik doğrulama akışı kullan
+    flowType: 'implicit' // PKCE yerine implicit flow kullanalım
   }
 }); 
