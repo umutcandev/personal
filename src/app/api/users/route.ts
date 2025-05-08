@@ -4,21 +4,29 @@ import { NextResponse } from 'next/server';
 // Supabase bağlantı bilgilerini kaydet ve günlüğe yaz
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+// Service role ile RLS bypass edilir - dikkatli kullanın!
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY;
 
 // Bağlantı bilgilerine sahip olduğumuzdan emin olalım
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('API: Supabase bilgileri eksik!', { 
     hasUrl: !!supabaseUrl, 
-    hasKey: !!supabaseAnonKey 
+    hasKey: !!supabaseAnonKey,
+    hasServiceKey: !!supabaseServiceKey
   });
 }
 
-// API route için yeni bir istemci oluşturalım
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// API route için yeni bir istemci oluşturalım - service role varsa onu kullanır
+const supabase = supabaseServiceKey
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false }
+    })
+  : createClient(supabaseUrl, supabaseAnonKey);
 
 export async function POST(request: Request) {
   try {
     console.log('API: Kullanıcı kaydetme isteği alındı');
+    console.log('API: Service role kullanımı:', !!supabaseServiceKey);
     
     const userData = await request.json();
     console.log('API: Kullanıcı verileri:', JSON.stringify(userData, null, 2));
