@@ -5,24 +5,24 @@ const LoginButton: React.FC = () => {
   const handleLogin = async () => {
     try {
       // Canlı site URL'si
-      const siteUrl = "https://personal-eta-umber.vercel.app";
+      const siteUrl = typeof window !== 'undefined' 
+        ? `${window.location.protocol}//${window.location.host}` 
+        : "https://personal-eta-umber.vercel.app";
       
-      console.log("Yönlendirme URL'si:", `${siteUrl}/api/auth/callback`);
+      const callbackUrl = `${siteUrl}/api/auth/callback`;
+      console.log("Yönlendirme URL'si:", callbackUrl);
       
       // GitHub ile giriş işlemini başlat
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${siteUrl}/api/auth/callback`,
-          queryParams: {
-            redirect_uri: `${siteUrl}/api/auth/callback`
-          }
+          redirectTo: callbackUrl
         },
       });
       
       if (error) {
         console.error("Giriş hatası:", error.message);
-        alert("Giriş yaparken bir hata oluştu.");
+        alert("Giriş yaparken bir hata oluştu: " + error.message);
       } else {
         console.log("Giriş başlatıldı:", data);
       }

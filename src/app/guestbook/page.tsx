@@ -83,6 +83,7 @@ export default function GuestbookPage() {
           console.error("Auth error:", error.message);
           setAuthError(error.message);
         } else {
+          console.log("User data retrieved:", data.user ? "Logged in" : "Not logged in");
           setUser(data.user);
           setAuthError(null);
         }
@@ -94,7 +95,8 @@ export default function GuestbookPage() {
     
     getUser();
     
-    const { data: listener } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
+      console.log("Auth state changed:", event, session ? "Session exists" : "No session");
       setUser(session?.user ?? null);
       if (session?.user) {
         setAuthError(null);
@@ -132,9 +134,16 @@ export default function GuestbookPage() {
       }
       
       // Check for access token in hash and clean up
-      if (window.location.hash.includes('access_token')) {
-        console.log("Authentication callback detected, cleaning up URL");
-        window.history.replaceState(null, '', window.location.pathname);
+      if (window.location.hash) {
+        console.log("URL hash detected, may contain auth data");
+        if (window.location.hash.includes('access_token')) {
+          console.log("Access token detected in URL, cleaning up");
+          // Let Supabase handle the hash automatically
+          supabase.auth.getSession().then(({ data }) => {
+            console.log("Session after hash:", data.session ? "exists" : "none");
+          });
+          window.history.replaceState(null, '', window.location.pathname);
+        }
       }
     }
   }, []);
