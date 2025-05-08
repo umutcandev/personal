@@ -1,9 +1,7 @@
-'use client';
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { setupAuthListener } from "../lib/supabaseClient";
-import { useEffect } from "react";
+import { AuthListener } from "@/components/AuthListener";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,23 +23,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Global auth listener'ı kur
-  useEffect(() => {
-    const subscription = setupAuthListener();
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
   return (
     <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col bg-background text-foreground font-sans`}
       >
         <main className="flex-1 flex flex-col items-center justify-center w-full">
-          {children}
+          <AuthListener>
+            {children}
+          </AuthListener>
         </main>
       </body>
     </html>
   );
-}
+} 
